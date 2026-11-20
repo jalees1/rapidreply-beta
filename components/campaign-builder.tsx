@@ -156,7 +156,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
   // Post IDs already tied to another automation on this account, so the picker
   // can flag them and the user knows not to double-assign. Maps postId ->
   // the campaign name using it (for the tooltip).
-  const [usedPosts, setUsedPosts] = useState<Record<string, string>>({});
+  const [activeCampaignMedia, setActiveCampaignMedia] = useState<Record<string, string>>({});
 
   const [matchMode, setMatchMode] = useState<MatchMode>("specific");
   const [keywordText, setKeywordText] = useState("");
@@ -310,18 +310,32 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
         if (cancelled || !payload.success) return;
         const map: Record<string, string> = {};
         for (const a of payload.data as LoadedCampaign[]) {
-          if (!a.postId) continue;
+          if (!a.postId || !a.isActive) continue;
           if (a.instagramAccountId !== selectedAccountId) continue;
           if (mode === "edit" && a.id === campaignId) continue;
           map[a.postId] = a.name;
         }
-        setUsedPosts(map);
+        setActiveCampaignMedia(map);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [selectedAccountId, mode, campaignId]);
+
+  // The Campaigns page can send a creator straight to the account media
+  // library. Wait for the picker to render before bringing it into view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("focus") !== "media") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("media-library")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [selectedAccountId]);
 
   // Prefill the editable fields from one queued import row. The reel is left
   // unset so the user picks it per row.
@@ -368,6 +382,19 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
     }
   }, [mode]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Media library hands the selected media ID to the builder. It is already
+  // validated again by the API when the campaign is saved.
+  useEffect(() => {
+    if (mode !== "new" || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const mediaId = params.get("mediaId");
+    const instagramAccountId = params.get("instagramAccountId");
+    if (!mediaId) return;
+    setTriggerScope("specific");
+    setPostId(mediaId);
+    if (instagramAccountId) setSelectedAccountId(instagramAccountId);
+  }, [mode]);
 
   const username =
     accounts.find((a) => a.id === selectedAccountId)?.username ?? "yourbrand";
@@ -457,7 +484,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
         // import queue.
         if (triggerScope === "specific" && postId) {
           const assignedPostId = postId;
-          setUsedPosts((prev) => ({ ...prev, [assignedPostId]: payload.name }));
+          setActiveCampaignMedia((prev) => ({ ...prev, [assignedPostId]: payload.name }));
         }
         // Importing: advance to the next queued row instead of leaving.
         if (importQueue && importQueue.length > 1) {
@@ -624,7 +651,7 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
             type="button"
             onClick={() => handleSubmit(mode === "new" ? true : isActive)}
             disabled={saving}
-            className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+            className="rr-button-primary px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saving ? t("Saving…") : mode === "new" ? t("Go Live") : t("Save changes")}
           </button>
@@ -680,11 +707,11 @@ export default function CampaignBuilder({ mode, campaignId }: CampaignBuilderPro
             {t("a specific post or reel")}
           </Radio>
           {triggerScope === "specific" && (
-            <div className="rounded-lg border border-border p-2">
+            <div id="media-library" className="rounded-lg border border-border p-2">
               <PostPicker
                 selectedPostId={postId}
                 instagramAccountId={selectedAccountId}
-                usedPostIds={usedPosts}
+                activeCampaignMedia={activeCampaignMedia}
                 onSelect={handlePostSelect}
               />
             </div>

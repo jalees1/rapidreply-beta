@@ -8,7 +8,7 @@ type Tone = "error" | "warning" | "success";
 
 const TONE_CLASSES: Record<Tone, string> = {
   error: "border-error/20 bg-error/10 text-error",
-  warning: "border-warning/20 bg-warning/10 text-warning",
+  warning: "border-blue-200 bg-blue-50 text-blue-700",
   success: "border-success/20 bg-success/10 text-success",
 };
 

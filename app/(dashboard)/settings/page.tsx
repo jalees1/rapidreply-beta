@@ -4,7 +4,6 @@ import LanguageSwitcher from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n/provider";
 import { Suspense, useEffect, useState } from "react";
 import type { AccountOption } from "@/components/account-select";
-import { ZernioConnection } from "@/components/zernio-connection";
 import { InstagramConnectNotice } from "@/components/instagram-connect-notice";
 
 interface SettingsData {
@@ -21,7 +20,6 @@ interface SettingsData {
   } | null;
   instagramAccounts: Array<
     AccountOption & {
-      provider?: "META" | "ZERNIO";
       tokenExpiresAt: string | null;
       webhookSubscribed: boolean;
     }
@@ -60,6 +58,7 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
   const [memberError, setMemberError] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -91,6 +90,28 @@ export default function SettingsPage() {
       body: JSON.stringify({ instagramAccountId }),
     });
     window.location.reload();
+  }
+
+  async function refreshInstagram(instagramAccountId: string) {
+    setConnectionError(null);
+    setBusy(`refresh:${instagramAccountId}`);
+    try {
+      const response = await fetch("/api/instagram/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instagramAccountId }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        setConnectionError(payload.error ?? t("Could not refresh the Instagram connection."));
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setConnectionError(t("Could not refresh the Instagram connection."));
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function inviteMember(event: React.FormEvent) {
@@ -147,10 +168,14 @@ export default function SettingsPage() {
         <p className="text-sm text-muted">{t("Saved in this browser. Campaign messages stay unchanged.")}</p>
       </section>
 
-      <ZernioConnection canManage={canManageMembers} />
-
       <section className="panel rounded p-4 sm:p-6">
         <h2 className="text-base font-semibold mb-6">{t("Instagram Connection")}</h2>
+
+        {connectionError && (
+          <p role="alert" className="mb-4 rounded-lg border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
+            {connectionError}
+          </p>
+        )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3 py-3 border-b border-border">
@@ -164,7 +189,7 @@ export default function SettingsPage() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                 accounts.length > 0
                   ? "bg-success/10 text-success"
-                  : "bg-warning/10 text-warning"
+                  : "bg-blue-50 text-blue-700"
               }`}
             >
               {accounts.length > 0 ? t("Connected") : t("Not connected")}
@@ -192,42 +217,54 @@ export default function SettingsPage() {
             {accounts.map((account) => (
               <div
                 key={account.id}
-                className="flex flex-col gap-3 rounded border border-border bg-surface/70 p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     @{account.username}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    {account.provider === "ZERNIO" ? t("Connected via Zernio") : <>{t("Token expires")}{" "}
-                    {account.tokenExpiresAt
+                    {t("Token expires")} {account.tokenExpiresAt
                       ? new Date(account.tokenExpiresAt).toLocaleDateString(locale)
-                      : t("not available")}</>}{" "}
+                      : t("not available")} {" "}
                     · {account.webhookSubscribed ? t("Webhook ready") : t("Webhook pending")}
                   </p>
                 </div>
-                <button
-                  onClick={() => disconnectInstagram(account.id)}
-                  disabled={busy === `disconnect:${account.id}`}
-                  className="inline-flex items-center justify-center rounded border border-error/20 px-4 py-2 text-sm font-medium text-error transition-all hover:border-error/40 hover:bg-error/10 disabled:opacity-50"
-                >
-                  {busy === `disconnect:${account.id}`
-                    ? t("Disconnecting...")
-                    : t("Disconnect")}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => void refreshInstagram(account.id)}
+                    disabled={busy === `refresh:${account.id}` || busy === `disconnect:${account.id}`}
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50 disabled:opacity-50"
+                  >
+                    {busy === `refresh:${account.id}`
+                      ? t("Refreshing...")
+                      : t("Refresh connection")}
+                  </button>
+                  <button
+                    onClick={() => disconnectInstagram(account.id)}
+                    disabled={busy === `disconnect:${account.id}` || busy === `refresh:${account.id}`}
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-error/20 px-4 py-2 text-sm font-medium text-error transition-all hover:border-error/40 hover:bg-error/10 disabled:opacity-50"
+                  >
+                    {busy === `disconnect:${account.id}`
+                      ? t("Disconnecting...")
+                      : t("Disconnect")}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-border flex gap-3">
-          <a
-            href="/api/instagram/connect"
-            className="px-4 py-2 rounded text-sm font-medium transition-colors bg-accent text-white hover:bg-accent-hover"
-          >
-            {t("Connect using your own Meta app")}
-          </a>
-        </div>
+        {accounts.length === 0 && (
+          <div className="mt-6 border-t border-border pt-4">
+            <a
+              href="/api/instagram/connect"
+              className="rr-button-primary inline-flex px-4 py-2 text-sm font-semibold text-white"
+            >
+              {t("Connect Instagram")}
+            </a>
+          </div>
+        )}
       </section>
 
       <section className="panel rounded p-4 sm:p-6">
@@ -260,7 +297,7 @@ export default function SettingsPage() {
               {membersData.invitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex flex-col gap-3 rounded border border-border bg-surface/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -321,7 +358,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={busy === "invite"}
-              className="rounded bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+              className="rr-button-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {busy === "invite" ? t("Inviting...") : t("Invite")}
             </button>

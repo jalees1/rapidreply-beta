@@ -4,22 +4,21 @@
    Plain and functional. No gradients, glass, glow, or animation. */
 
 @theme inline {
-  --color-background: #ffffff;
-  --color-foreground: #18181b;
-  --color-surface: #f7f7f8;
-  --color-surface-hover: #efeff1;
-  --color-border: #e4e4e7;
-  --color-border-hover: #d4d4d8;
-  --color-muted: #71717a;
-  --color-accent: #f97316;
-  --color-accent-hover: #ea580c;
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-hover: #cbd5e1;
+  --color-muted: #64748b;
+  --color-accent: #1e40af;
+  --color-accent-hover: #1e3a8a;
   --color-success: #16a34a;
   --color-error: #dc2626;
-  --color-warning: #d97706;
+  --color-warning: #1e40af;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, monospace;
 }
-
 html {
   color-scheme: light;
 }
@@ -59,6 +58,7 @@ select:focus-visible {
 .panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
 /* Kept as no-op aliases so existing markup degrades to plain surfaces
@@ -67,6 +67,29 @@ select:focus-visible {
 .glass-strong {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+}
+
+/* Shared solid-blue treatment for primary actions. */
+.rr-button-primary {
+  min-height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  background: var(--color-accent);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.16);
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.rr-button-primary:hover {
+  background: var(--color-accent-hover);
+  box-shadow: 0 2px 5px rgb(15 23 42 / 0.18);
+}
+
+.rr-button-primary:active {
+  transform: scale(0.98);
+}
+
+.rr-button-primary:disabled {
+  box-shadow: none;
 }
 
 .gradient-mesh {
@@ -89,20 +112,3 @@ select:focus-visible {
   }
 }
 
-@theme inline {
-  --color-zernio-coral: #EB3514;
-  --color-zernio-cream: #F0EFEB;
-  --color-zernio-border: #D9D8D3;
-  --color-zernio-charcoal: #2D2D2D;
-}
-.zernio-sponsor { background: var(--color-zernio-cream); color: var(--color-zernio-charcoal); border-color: var(--color-zernio-border); }
-.zernio-action { background: var(--color-zernio-coral); color: white; }
-
-@font-face {
-  font-family: 'Zernio Geist';
-  src: url('/fonts/geist-latin.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-.zernio-sponsor { font-family: 'Zernio Geist', sans-serif; }

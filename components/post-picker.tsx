@@ -19,6 +19,7 @@ interface InstagramPost {
   id: string;
   caption?: string;
   media_type: string;
+  media_product_type?: string;
   media_url?: string;
   thumbnail_url?: string;
   permalink?: string;
@@ -28,8 +29,8 @@ interface InstagramPost {
 interface PostPickerProps {
   selectedPostId: string | null;
   instagramAccountId?: string | null;
-  /** postId -> name of the campaign already using it. Flagged in the grid. */
-  usedPostIds?: Record<string, string>;
+  /** media ID -> active campaign name. These media cannot receive another active campaign. */
+  activeCampaignMedia?: Record<string, string>;
   onSelect: (
     postId: string,
     postUrl?: string,
@@ -41,7 +42,7 @@ interface PostPickerProps {
 export default function PostPicker({
   selectedPostId,
   instagramAccountId,
-  usedPostIds,
+  activeCampaignMedia,
   onSelect,
 }: PostPickerProps) {
   const { t } = useI18n();
@@ -124,7 +125,7 @@ export default function PostPicker({
   if (posts.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-muted">{t("No posts found")}</p>
+        <p className="text-sm text-muted">{t("No account media found")}</p>
       </div>
     );
   }
@@ -151,21 +152,21 @@ export default function PostPicker({
             // cleared, which is the case this whole change exists to avoid.
             setShown(PAGE_SIZE);
           }}
-          placeholder={t("Search your posts by caption…")}
+          placeholder={t("Search account media by caption…")}
           className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 focus:border-accent/40 focus:outline-none"
         />
         <span className="shrink-0 text-xs text-muted">{posts.length}</span>
       </div>
       {visible.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted">
-          {t("No posts match “")}{query}{t("”")}
+          {t("No media matches “")}{query}{t("”")}
         </p>
       ) : (
         <>
-          {usedPostIds && Object.keys(usedPostIds).length > 0 && (
-            <p className="flex items-center gap-1.5 px-1 text-[11px] text-muted">
-              <span className="inline-block h-2.5 w-2.5 rounded-sm border border-warning/50" />
-              {t("Already used")}
+          {activeCampaignMedia && Object.keys(activeCampaignMedia).length > 0 && (
+            <p className="flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-2 text-[11px] text-blue-800">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-700" />
+              {t("Media with an active campaign is locked. Pause or delete that campaign to use it again.")}
             </p>
           )}
           {/* auto-rows-min + content-start keep each row at its natural height.
@@ -174,30 +175,45 @@ export default function PostPicker({
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 auto-rows-min content-start overflow-y-auto p-1">
             {visible.map((post) => {
               const isSelected = selectedPostId === post.id;
-              const usedByName = usedPostIds?.[post.id];
-              const isUsed = Boolean(usedByName) && !isSelected;
+              const activeCampaignName = activeCampaignMedia?.[post.id];
+              const isClaimed = Boolean(activeCampaignName) && !isSelected;
+              const isStory = post.media_product_type === "STORY";
+              const isUnavailable = isClaimed || isStory;
               const thumb = post.thumbnail_url ?? post.media_url;
               const isVideo = post.media_type === "VIDEO";
+              const mediaLabel = post.media_product_type === "STORY"
+                ? t("Story")
+                : post.media_product_type === "REELS"
+                  ? t("Reel")
+                  : post.media_type === "CAROUSEL_ALBUM"
+                    ? t("Carousel")
+                    : isVideo
+                      ? t("Video")
+                      : t("Post");
               const showVideo =
                 isVideo && hoveredId === post.id && Boolean(post.media_url);
               return (
           <button
             key={post.id}
             type="button"
-            onClick={() => onSelect(post.id, post.permalink, thumb, post.caption)}
+            onClick={() => {
+              if (!isUnavailable) onSelect(post.id, post.permalink, thumb, post.caption);
+            }}
             onMouseEnter={() => setHoveredId(post.id)}
             onMouseLeave={() =>
               setHoveredId((cur) => (cur === post.id ? null : cur))
             }
             aria-pressed={isSelected}
-            title={isUsed && usedByName ? t("Already used by \"{name}\"", { name: usedByName }) : undefined}
+            aria-disabled={isUnavailable}
+            disabled={isUnavailable}
+            title={isClaimed && activeCampaignName ? t("Active campaign: {name}", { name: activeCampaignName }) : isStory ? t("Stories do not support comment triggers") : undefined}
             className={`
-              relative aspect-square rounded overflow-hidden border-2
+              relative aspect-square rounded overflow-hidden border-2 text-left
               ${
                 isSelected
                   ? "border-accent"
-                  : isUsed
-                    ? "border-warning/40 hover:border-warning/60"
+                  : isUnavailable
+                    ? "cursor-not-allowed border-slate-300 bg-slate-100"
                     : "border-border hover:border-border-hover"
               }
             `}
@@ -208,7 +224,7 @@ export default function PostPicker({
                 alt={post.caption?.slice(0, 50) ?? t("Instagram post")}
                 loading="lazy"
                 decoding="async"
-                className={`w-full h-full object-cover ${isUsed ? "opacity-75" : ""}`}
+                className={`h-full w-full object-cover ${isUnavailable ? "opacity-30 grayscale" : ""}`}
               />
             ) : (
               <div className="w-full h-full bg-surface flex items-center justify-center">
@@ -225,13 +241,30 @@ export default function PostPicker({
                 playsInline
                 preload="none"
                 className={`absolute inset-0 h-full w-full object-cover ${
-                  isUsed ? "opacity-60" : ""
+                  isUnavailable ? "opacity-60" : ""
                 }`}
               />
             )}
             {isSelected && (
               <span className="absolute bottom-0 inset-x-0 bg-accent text-white text-xs py-1">
                 {t("Selected")}
+              </span>
+            )}
+            {isClaimed && (
+              <span className="absolute inset-1 flex flex-col items-center justify-center rounded bg-slate-950/75 px-2 text-center text-white">
+                <LockIcon />
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide">{t("Campaign active")}</span>
+                <span className="mt-0.5 line-clamp-2 text-[10px] text-slate-200">{activeCampaignName}</span>
+              </span>
+            )}
+            {isStory && (
+              <span className="absolute left-1 top-1 rounded bg-slate-950/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {mediaLabel}
+              </span>
+            )}
+            {!isStory && (
+              <span className="absolute left-1 top-1 rounded bg-slate-950/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {mediaLabel}
               </span>
             )}
           </button>
@@ -250,5 +283,14 @@ export default function PostPicker({
         </>
       )}
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="5" y="10" width="14" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
   );
 }

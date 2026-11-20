@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentWorkspaceId } from "@/lib/auth";
 import { getWorkspaceInstagramAccount } from "@/lib/instagram-accounts";
-import { getAllUserMedia, getUserMedia } from "@/lib/instagram/provider";
+import { getAllUserMedia, getUserMedia, getUserStories } from "@/lib/instagram/provider";
 import { createInstagramContext } from "@/lib/instagram/provider";
 
 export async function GET(request: NextRequest) {
@@ -47,14 +47,22 @@ export async function GET(request: NextRequest) {
       posts = await getUserMedia({ context: accessToken, limit: limit });
     }
 
+    const storyResult = await getUserStories({ context: accessToken })
+      .then((stories) => ({ stories, available: true }))
+      .catch((error) => {
+        console.warn("[Instagram Posts] Stories could not be loaded:", error);
+        return { stories: [], available: false };
+      });
+    const media = [...posts, ...storyResult.stories].filter(
+      (item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index
+    );
+
     return NextResponse.json({
       success: true,
-      data: posts,
-      provider: account.provider,
-      limitations:
-        account.provider === "ZERNIO"
-          ? ["Zernio returns the 25 most recent Instagram posts."]
-          : [],
+      data: media,
+      limitations: storyResult.available
+        ? ["Stories are shown for reference. Comment-to-DM campaigns can only run on posts and reels."]
+        : [],
     });
   } catch (err) {
     console.error("[Instagram Posts] Error:", err);

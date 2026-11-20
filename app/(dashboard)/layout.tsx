@@ -7,8 +7,7 @@ import { prisma } from "@/lib/db/client";
 import { ensureWorkspaceForUser } from "@/lib/workspace";
 
 export async function generateMetadata() {
-  const { t } = await getI18n();
-  return { title: t("OpenReply - Open source Instagram comment-to-DM automation") };
+  return { title: "Rapid Reply - Instagram comment-to-DM automation" };
 }
 
 export default async function DashboardLayout({
@@ -37,6 +36,8 @@ export default async function DashboardLayout({
     <I18nProvider locale={locale}>
       <DashboardShell
         workspaceName={workspace.name}
+        userName={session.user.name ?? null}
+        userEmail={session.user.email ?? null}
         instagramUsername={accounts[0]?.username ?? null}
         instagramAccountCount={accounts.length}
       >

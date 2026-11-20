@@ -1,6 +1,6 @@
 # Stack
 
-Everything OpenReply needs to run, in one place: the application libraries, the
+Everything Rapid Reply needs to run, in one place: the application libraries, the
 runtime processes, and the specific (free) services this instance is deployed on.
 For the step-by-step setup, see [setup.md](setup.md).
 
@@ -12,7 +12,7 @@ For the step-by-step setup, see [setup.md](setup.md).
 | Language | TypeScript 5 |
 | ORM / DB | Prisma 7 with the `@prisma/adapter-pg` driver, PostgreSQL |
 | Queue | BullMQ 5 on Redis, via `ioredis` |
-| Auth | Auth.js / NextAuth 5 (email magic links) |
+| Auth | Auth.js / NextAuth 5 (email magic links, encrypted JWT session cookies) |
 | Email | Resend (login links) |
 | Validation | Zod 4 |
 | Charts | Recharts 3 |

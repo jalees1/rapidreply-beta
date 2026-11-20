@@ -1,48 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { duplicateCampaign } from "@/lib/campaigns/duplicate";
-import {
-  canManageWorkspace,
-  getCurrentWorkspaceContext,
-} from "@/lib/workspace-access";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  const context = await getCurrentWorkspaceContext();
-  if (!context) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
-
-  if (!canManageWorkspace(context.role)) {
-    return NextResponse.json(
-      { success: false, error: "Only owners and admins can create campaigns" },
-      { status: 403 }
-    );
-  }
-
-  const automationId = request.nextUrl.searchParams.get("id");
-  if (!automationId) {
-    return NextResponse.json(
-      { success: false, error: "Missing campaign ID" },
-      { status: 400 }
-    );
-  }
-
-  const duplicate = await duplicateCampaign({
-    automationId,
-    workspaceId: context.workspaceId,
-  });
-
-  if (!duplicate) {
-    return NextResponse.json(
-      { success: false, error: "Campaign not found" },
-      { status: 404 }
-    );
-  }
-
+/**
+ * Campaign cloning has been retired. Keeping this explicit response prevents
+ * old browser sessions from treating the removed endpoint as a server error.
+ */
+export async function POST() {
   return NextResponse.json(
-    { success: true, data: duplicate },
-    { status: 201 }
+    { success: false, error: "Campaign cloning is no longer available" },
+    { status: 410 }
   );
 }

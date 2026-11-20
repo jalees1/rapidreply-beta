@@ -1,10 +1,10 @@
 .or-landing {
-  --or-paper: #faf9f6;
-  --or-ink: #22221f;
-  --or-muted: #62625e;
-  --or-line: #deded7;
-  --or-orange: #c4490c;
-  --or-peach: #f6e6d8;
+  --or-paper: #f8fafc;
+  --or-ink: #0f172a;
+  --or-muted: #64748b;
+  --or-line: #dbe4f0;
+  --or-blue: #1e40af;
+  --or-peach: #eff6ff;
   background: var(--or-paper);
   color: var(--or-ink);
   font-size: 16px;
@@ -27,7 +27,7 @@
   text-decoration: underline;
 }
 .or-landing :focus-visible {
-  outline: 2px solid var(--or-orange);
+  outline: 2px solid var(--or-blue);
   outline-offset: 4px;
 }
 .or-container {
@@ -68,7 +68,7 @@
   letter-spacing: -0.045em;
 }
 .or-wordmark > span {
-  color: var(--or-orange);
+  color: var(--or-blue);
   font-weight: 400;
 }
 .or-nav nav {
@@ -124,12 +124,14 @@
   padding: 10px 16px;
 }
 .or-button-primary {
-  background: var(--or-ink);
+  background: #1e40af;
   color: white;
-  border-color: var(--or-ink);
+  border-color: #1e40af;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.16);
 }
 .or-button-primary:hover {
-  background: #3c3c36;
+  background: #1e3a8a;
+  box-shadow: 0 2px 5px rgb(15 23 42 / 0.18);
   text-decoration: none !important;
 }
 .or-hero {
@@ -144,7 +146,7 @@
     500 13px/1.5 Menlo,
     Consolas,
     monospace;
-  color: var(--or-orange);
+  color: var(--or-blue);
   margin-bottom: 20px !important;
 }
 .or-hero h1 {
@@ -154,7 +156,7 @@
   letter-spacing: -0.055em;
 }
 .or-hero h1 > span {
-  color: var(--or-orange);
+  color: var(--or-blue);
 }
 .or-lead {
   color: var(--or-muted);
@@ -273,7 +275,7 @@
   min-height: 180px;
 }
 .or-post .or-mono {
-  color: var(--or-orange);
+  color: var(--or-blue);
   position: relative;
   z-index: 1;
 }
@@ -347,7 +349,7 @@
   margin-block: 20px;
 }
 .or-match code {
-  color: var(--or-orange);
+  color: var(--or-blue);
   font-weight: 600;
 }
 .or-match-line {
@@ -463,7 +465,7 @@
     12px Menlo,
     Consolas,
     monospace;
-  color: var(--or-orange);
+  color: var(--or-blue);
   padding-top: 4px;
 }
 .or-steps p {
@@ -544,9 +546,6 @@
   padding-top: 24px;
   border-top: 2px solid var(--or-line);
 }
-.or-provider-grid .or-provider-zernio {
-  border-color: var(--color-zernio-coral);
-}
 .or-provider-title > span {
   display: block;
   font-size: 12px;
@@ -566,10 +565,6 @@
 .or-provider-grid li {
   padding-left: 4px;
   margin-block: 8px;
-}
-.or-provider-zernio .or-text-link {
-  color: var(--color-zernio-charcoal);
-  text-decoration: underline;
 }
 .or-provider-guide {
   display: block;

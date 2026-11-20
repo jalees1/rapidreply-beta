@@ -239,23 +239,6 @@ export default function CampaignsPage() {
     }
   }
 
-  // The copy is made server-side from the stored campaign, so settings this
-  // list never loads (the DM trigger, the follow-up, the link button label)
-  // still come along.
-  async function duplicateAutomation(id: string) {
-    setMenuOpenId(null);
-    try {
-      const res = await fetch(`/api/automations/duplicate?id=${id}`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.success) void fetchAutomations();
-      else console.error("Duplicate failed:", data.error);
-    } catch (err) {
-      console.error("Failed to duplicate:", err);
-    }
-  }
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -298,14 +281,14 @@ export default function CampaignsPage() {
             />
           )}
           <Link
-            href="/campaigns/import"
-            className="flex-1 rounded border border-border px-4 py-2 text-center text-sm font-medium text-muted hover:text-foreground sm:flex-none"
+            href="/campaigns/media"
+            className="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-2 text-center text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-50 sm:flex-none"
           >
-            {t("Import")}
+            {t("Media library")}
           </Link>
           <Link
             href="/campaigns/new"
-            className="flex-1 rounded bg-accent px-4 py-2 text-center text-sm font-medium text-white hover:bg-accent-hover sm:flex-none"
+            className="rr-button-primary flex-1 px-4 py-2 text-center text-sm font-semibold text-white sm:flex-none"
           >
             {t("New Campaign")}
           </Link>
@@ -349,7 +332,7 @@ export default function CampaignsPage() {
           </p>
           <Link
             href="/campaigns/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-accent text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+            className="rr-button-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white"
           >
             {t("Create Campaign")}
           </Link>
@@ -433,7 +416,7 @@ export default function CampaignsPage() {
                     {auto.isActive ? t("Active") : t("Paused")}
                   </span>
                   {auto.pendingNextReel && (
-                    <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-warning">
+                    <span className="shrink-0 rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-700">
                       {t("Waiting for next reel")}
                     </span>
                   )}
@@ -523,7 +506,7 @@ export default function CampaignsPage() {
                   onClick={() => toggleActive(auto.id, auto.isActive)}
                   className={`
                     relative w-11 h-6 rounded-full transition-colors
-                    ${auto.isActive ? "bg-accent" : "bg-zinc-300"}
+                    ${auto.isActive ? "bg-blue-700" : "bg-slate-300"}
                   `}
                 >
                   <span
@@ -551,13 +534,14 @@ export default function CampaignsPage() {
                         className="fixed inset-0 z-10"
                         onClick={() => setMenuOpenId(null)}
                       />
-                      <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
-                        <button
-                          onClick={() => void duplicateAutomation(auto.id)}
-                          className="block w-full px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover"
+                      <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg">
+                        <Link
+                          href={`/campaigns/${auto.id}/edit`}
+                          onClick={() => setMenuOpenId(null)}
+                          className="block w-full px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
                         >
-                          {t("Duplicate")}
-                        </button>
+                          {t("Edit")}
+                        </Link>
                         <button
                           onClick={() => {
                             setMenuOpenId(null);

@@ -53,7 +53,6 @@ vi.mock("@/lib/workspace-access", () => ({
 }));
 
 import { GET, PATCH, POST } from "../app/api/automations/route";
-import { duplicateCampaign } from "../lib/campaigns/duplicate";
 import { TRACKED_LINK_ORDER } from "../lib/tracking/link-order";
 
 const schema = `tracked_link_order_${randomBytes(4).toString("hex")}`;
@@ -288,40 +287,6 @@ describe.skipIf(!DATABASE_URL)("tracked link order on a real Postgres", () => {
   });
 
   describe("reading", () => {
-    it("keeps a duplicated campaign's buttons in order on the dashboard", async () => {
-      // The reported bug: an original whose second link was added later, then
-      // copied. Each copy's links are written together, and edits keep moving
-      // rows on disk. Before this change most copies came back swapped here.
-      const originalId = await createCampaign("Original", { primary: PRIMARY });
-      await saveCampaign(originalId, { primary: PRIMARY, second: SECOND });
-
-      const copyIds: string[] = [];
-      for (let i = 0; i < 20; i++) {
-        const copy = await duplicateCampaign({
-          automationId: originalId,
-          workspaceId: state.workspaceId,
-        });
-        copyIds.push(copy!.id);
-        await moveOlderLinksOnDisk(originalId);
-      }
-
-      const res = await GET(jsonRequest("GET", "http://localhost/api/automations"));
-      const campaigns: {
-        id: string;
-        trackedLinks: { label: string; destinationUrl: string }[];
-      }[] = (await res.json()).data;
-
-      for (const id of [originalId, ...copyIds]) {
-        const campaign = campaigns.find((c) => c.id === id)!;
-        expect(
-          campaign.trackedLinks.map((l) => [l.destinationUrl, l.label])
-        ).toEqual([
-          [PRIMARY, "Primary campaign link"],
-          [SECOND, "Read the guide"],
-        ]);
-      }
-    });
-
     it("keeps order for links an older build writes while a deploy rolls out", async () => {
       // An older build does not know about position, so its two links land
       // with the default 0 and the same createdAt.
@@ -414,16 +379,5 @@ describe.skipIf(!DATABASE_URL)("tracked link order on a real Postgres", () => {
       ]);
     });
 
-    it("gives a duplicate positions 0 and 1 in the original's order", async () => {
-      const copy = await duplicateCampaign({
-        automationId: legacy.distinctCampaign,
-        workspaceId: state.workspaceId,
-      });
-
-      expect(await storedLinks(copy!.id)).toEqual([
-        { label: "Primary campaign link", destinationUrl: PRIMARY, position: 0 },
-        { label: "Read the guide", destinationUrl: SECOND, position: 1 },
-      ]);
-    });
   });
 });

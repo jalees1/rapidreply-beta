@@ -696,6 +696,22 @@ export async function getUserMedia(
   return data.data;
 }
 
+/** Active stories expire after 24 hours and are returned separately from the
+ * profile media library. */
+export async function getUserStories(
+  accessToken: string
+): Promise<InstagramMedia[]> {
+  const url = new URL(`${instagramGraphBase()}/me/stories`);
+  url.searchParams.set("fields", MEDIA_FIELDS);
+  url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url.toString());
+  const data = await handleResponse<{ data: InstagramMedia[] }>(response);
+  return data.data.map((story) => ({
+    ...story,
+    media_product_type: story.media_product_type ?? "STORY",
+  }));
+}
+
 /**
  * Fetch media by following pagination cursors until `max` items are collected
  * or there are no more pages. Pass a large `max` for an "all time" view; the

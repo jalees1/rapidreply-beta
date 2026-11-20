@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/client";
-import { getBaseUrl } from "@/lib/env";
+import { getBaseUrl, getInstagramRedirectUri } from "@/lib/env";
 import { canConnectInstagramAccount } from "@/lib/instagram-accounts";
 import { getLongLivedToken, getUserInfo, subscribeInstagramAccountToWebhooks } from "@/lib/meta/client";
 import {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const redirectUri = `${baseUrl}/api/instagram/callback`;
+    const redirectUri = getInstagramRedirectUri();
     const { accessToken: shortLivedToken } = await exchangeCodeForToken(
       code,
       redirectUri
@@ -93,11 +93,11 @@ export async function GET(request: NextRequest) {
     const existing = await prisma.instagramAccount.findUnique({ where: { instagramId } });
     if (existing) {
       const updated = await prisma.instagramAccount.updateMany({
-        where: { id: existing.id, workspaceId: state.workspaceId, provider: 'META' }, data,
+        where: { id: existing.id, workspaceId: state.workspaceId }, data,
       });
       if (!updated.count) return NextResponse.redirect(`${baseUrl}/settings?instagram=already_connected`);
     } else {
-      await prisma.instagramAccount.create({ data: { ...data, workspaceId: state.workspaceId, instagramId, provider: 'META' } });
+      await prisma.instagramAccount.create({ data: { ...data, workspaceId: state.workspaceId, instagramId } });
     }
 
     return NextResponse.redirect(`${baseUrl}/dashboard?connected=true`);

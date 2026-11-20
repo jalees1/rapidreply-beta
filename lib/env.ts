@@ -18,6 +18,26 @@ export function getBaseUrl(): string {
   return process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 }
 
+/** The exact redirect URI configured in the Instagram app's OAuth settings. */
+export function getInstagramRedirectUri(): string {
+  const redirectUri =
+    process.env.INSTAGRAM_REDIRECT_URI ??
+    `${getBaseUrl().replace(/\/$/, "")}/api/instagram/callback`;
+  const parsed = new URL(redirectUri);
+
+  if (
+    !["/api/instagram/callback", "/api/instagram/callback/"].includes(parsed.pathname) ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw new Error(
+      "INSTAGRAM_REDIRECT_URI must be the exact /api/instagram/callback URL (with an optional trailing slash)"
+    );
+  }
+
+  return parsed.toString();
+}
+
 export function getEncryptionKeyHex(): string {
   const value = readEnv("ENCRYPTION_KEY");
   if (!HEX_32_BYTE.test(value)) {
@@ -37,13 +57,23 @@ const INSTAGRAM_OAUTH_ENV = [
 ] as const;
 
 export function getMissingInstagramOAuthEnv(): string[] {
-  return INSTAGRAM_OAUTH_ENV.filter((name) => {
+  const missing: string[] = INSTAGRAM_OAUTH_ENV.filter((name) => {
     const value = process.env[name];
     if (!value) return true;
     // A malformed key fails later inside encryptToken, after the user has
     // already round-tripped through Meta — catch the bad format here instead.
     return name === "ENCRYPTION_KEY" && !HEX_32_BYTE.test(value);
   });
+
+  if (process.env.INSTAGRAM_REDIRECT_URI) {
+    try {
+      getInstagramRedirectUri();
+    } catch {
+      missing.push("INSTAGRAM_REDIRECT_URI");
+    }
+  }
+
+  return missing;
 }
 
 export function getMetaGraphApiVersion(): string {
@@ -77,11 +107,9 @@ export async function isPublicDemoHost(): Promise<boolean> {
 /**
  * Optional sign-in allowlist.
  *
- * A self-hosted instance on a public domain is open to signup: the email
- * provider creates an account for whoever asks for a magic link, and that
- * account gets its own workspace. ALLOWED_EMAILS closes it to a comma-separated
- * list of addresses. Left unset, sign-in behaves exactly as before, so an
- * existing deployment is unaffected.
+ * Account registration is open on a self-hosted instance by default.
+ * ALLOWED_EMAILS can restrict registration and sign-in to a comma-separated
+ * list of addresses.
  */
 export function isEmailAllowedToSignIn(
   email: string | null | undefined

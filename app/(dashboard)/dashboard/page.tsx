@@ -100,7 +100,7 @@ export default function DashboardPage() {
             {" · "}
             {t(stats?.contactsCount === 1 ? "{count} contact" : "{count} contacts", { count: stats?.contactsCount ?? 0 })}
             {" · "}
-            <a href="/logs" className="text-accent hover:underline">
+            <a href="/logs" className="text-blue-600 hover:text-blue-700 hover:underline">
               {t("See activity")}
             </a>
           </p>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                     the bar sits in a wrapper that fills the column's free space. */}
                 <div className="w-full min-h-0 flex-1 flex items-end">
                   <div
-                    className="w-full rounded-sm bg-accent min-h-[4px]"
+                    className="w-full rounded-sm bg-blue-700 min-h-[4px]"
                     style={{ height: `${Math.max((day.count / maxDM) * 100, 4)}%` }}
                   />
                 </div>

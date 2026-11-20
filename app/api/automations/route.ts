@@ -362,6 +362,23 @@ export async function POST(request: NextRequest) {
     parsed.data;
   // A post is only stored for the "specific post" trigger.
   const isSpecificPost = !pendingNextReel && !matchAnyPost;
+  if (isSpecificPost && parsed.data.isActive && parsed.data.postId) {
+    const activeCampaign = await prisma.automation.findFirst({
+      where: {
+        workspaceId,
+        instagramAccountId: instagramAccount.id,
+        postId: parsed.data.postId,
+        isActive: true,
+      },
+      select: { name: true },
+    });
+    if (activeCampaign) {
+      return NextResponse.json(
+        { success: false, error: `An active campaign already uses this media: ${activeCampaign.name}` },
+        { status: 409 }
+      );
+    }
+  }
   const publicReplyList = (
     parsed.data.publicReplyMessages.length > 0
       ? parsed.data.publicReplyMessages
@@ -528,6 +545,29 @@ export async function PATCH(request: NextRequest) {
   if (automationData.matchAnyPost === true || automationData.pendingNextReel === true) {
     automationData.postId = null;
     automationData.postUrl = null;
+  }
+  const nextPostId = automationData.postId === undefined
+    ? existing.postId
+    : automationData.postId;
+  const nextAccountId = automationData.instagramAccountId ?? existing.instagramAccountId;
+  const nextIsActive = automationData.isActive ?? existing.isActive;
+  if (nextPostId && nextIsActive) {
+    const activeCampaign = await prisma.automation.findFirst({
+      where: {
+        workspaceId,
+        instagramAccountId: nextAccountId,
+        postId: nextPostId,
+        isActive: true,
+        NOT: { id: automationId },
+      },
+      select: { name: true },
+    });
+    if (activeCampaign) {
+      return NextResponse.json(
+        { success: false, error: `An active campaign already uses this media: ${activeCampaign.name}` },
+        { status: 409 }
+      );
+    }
   }
   // Keep the public-reply variations list and the legacy single field in sync.
   if (automationData.publicReplyMessages !== undefined) {

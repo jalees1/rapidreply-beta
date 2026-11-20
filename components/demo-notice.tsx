@@ -65,14 +65,14 @@ export function DemoNotice({ variant }: { variant: "banner" | "panel" }) {
 
   if (variant === "banner") {
     return (
-      <div className="relative border-b border-orange-200 bg-orange-50">
+      <div className="relative border-b border-blue-200 bg-blue-50">
         <p className="mx-auto w-full max-w-6xl px-10 py-2 text-center text-xs leading-5 text-zinc-700 sm:px-14 sm:text-sm">
-          <span className="font-bold text-zinc-900">{DEMO_HOST}</span> {t("is a demo. OpenReply is self-hosted — signing in here will not send DMs for your account.")}{" "}
+          <span className="font-bold text-zinc-900">{DEMO_HOST}</span> {t("is a demo. Rapid Reply is self-hosted — signing in here will not send DMs for your account.")}{" "}
           <a
             href={SETUP_DOCS_URL}
             target="_blank"
             rel="noreferrer"
-            className="font-bold text-orange-700 underline underline-offset-2 transition hover:text-orange-800"
+            className="font-bold text-blue-700 underline underline-offset-2 transition hover:text-blue-800"
           >
             {t("Deploy your own copy")}
           </a>
@@ -94,7 +94,7 @@ export function DemoNotice({ variant }: { variant: "banner" | "panel" }) {
     <div className="relative mb-5 rounded border border-warning/30 bg-warning/10 px-4 py-3 pr-10">
       <p className="text-sm leading-6 text-foreground">
         <span className="font-semibold">{DEMO_HOST} {t("is a demo instance.")}</span>{" "}
-        {t("Signing in here will not send DMs for your Instagram account. OpenReply is self-hosted, so it only works on a deployment you run yourself, with your own Meta app and your own domain.")}{" "}
+        {t("Signing in here will not send DMs for your Instagram account. Rapid Reply is self-hosted, so it only works on a deployment you run yourself, with your own Meta app and your own domain.")}{" "}
         <a
           href={SETUP_DOCS_URL}
           target="_blank"

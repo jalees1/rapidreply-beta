@@ -14,6 +14,7 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
+  passwordHash  String?
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -75,7 +76,6 @@ model Workspace {
   usagePeriodStart  DateTime @default(now())
   dmsSentThisPeriod Int      @default(0)
 
-  zernioConnection  ZernioConnection?
   members           WorkspaceMember[]
   invitations       WorkspaceInvitation[]
   instagramAccounts InstagramAccount[]
@@ -85,7 +85,6 @@ model Workspace {
   linkClicks        LinkClick[]
   webhookEvents     WebhookEvent[]
   operationalEvents OperationalEvent[]
-  serviceKeys       ServiceKey[]
 
   @@index([ownerId])
 }
@@ -102,21 +101,6 @@ model WorkspaceMember {
 
   @@unique([workspaceId, userId])
   @@index([userId])
-}
-
-model ServiceKey {
-  id          String    @id @default(cuid())
-  workspaceId String
-  name        String
-  tokenHash   String    @unique
-  scopes      String[]
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  lastUsedAt  DateTime?
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId])
 }
 
 model WorkspaceInvitation {
@@ -147,8 +131,6 @@ model InstagramAccount {
   instagramId       String   @unique
   username          String
   name              String?
-  provider          InstagramProvider @default(META)
-  zernioAccountId   String?
   accessToken       String
   tokenExpiresAt    DateTime?
   webhookSubscribed Boolean  @default(false)
@@ -413,22 +395,6 @@ enum OperationalEventLevel {
   ERROR
 }
 
-
-enum InstagramProvider {
-  META
-  ZERNIO
-}
-
-model ZernioConnection {
-  workspaceId    String @id
-  apiKey         String
-  profileId      String?
-  webhookId      String?
-  webhookSecret  String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-}
 
 // Claims persist independently of BullMQ retention so old taps never resend.
 model PostbackDelivery {
