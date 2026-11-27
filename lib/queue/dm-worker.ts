@@ -56,6 +56,18 @@ import { hashRecipientId } from "@/lib/tracking/server";
 
 const BACKOFF_DELAYS = [5 * 60 * 1000, 15 * 60 * 1000, 45 * 60 * 1000];
 
+// BullMQ blocks in Redis while the queue is empty, then wakes immediately when
+// a webhook adds a job. Its default five-second timeout consumes a large
+// number of Redis commands on an otherwise idle, low-volume deployment.
+const QUEUE_DRAIN_DELAY_SECONDS = Math.max(
+  5,
+  Number(process.env.QUEUE_DRAIN_DELAY_SECONDS ?? 30)
+);
+const WORKER_CONCURRENCY = Math.max(
+  1,
+  Number(process.env.DM_WORKER_CONCURRENCY ?? 1)
+);
+
 // How long to wait before re-checking a follow that came back false: one
 // delay per re-check, each counted from the previous check.
 //
@@ -1586,7 +1598,8 @@ async function recordWorkerFailure(
 export function createDMWorker(): Worker<DmQueueJob> {
   const worker = new Worker<DmQueueJob>("dm-processing", processJob, {
     connection: getRedisConnection(),
-    concurrency: 5,
+    concurrency: WORKER_CONCURRENCY,
+    drainDelay: QUEUE_DRAIN_DELAY_SECONDS,
     settings: {
       backoffStrategy: (attemptsMade: number) =>
         BACKOFF_DELAYS[Math.min(attemptsMade - 1, BACKOFF_DELAYS.length - 1)],

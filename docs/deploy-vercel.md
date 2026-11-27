@@ -57,6 +57,15 @@ npm run worker
 
 The worker must remain online. It consumes webhook jobs from Redis, processes retries and delayed messages, and polls for comments missed by Meta webhooks.
 
+For a low-volume deployment using metered Redis, add these values to the
+worker host environment. A webhook still wakes the queue immediately; the
+longer drain delay only reduces idle Redis polling.
+
+```text
+QUEUE_DRAIN_DELAY_SECONDS=30
+DM_WORKER_CONCURRENCY=1
+```
+
 ## 5. Configure Meta after the first deployment
 
 Use the production domain in Meta's Business Login settings:
